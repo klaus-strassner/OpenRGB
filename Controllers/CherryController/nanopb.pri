@@ -1,0 +1,7 @@
+NANOPB_PATH  = $$PWD/nanopb
+
+INCLUDEPATH += $$NANOPB_PATH
+
+HEADERS += $$files($$NANOPB_PATH/*.h)
+
+SOURCES += $$files($$NANOPB_PATH/*.c)

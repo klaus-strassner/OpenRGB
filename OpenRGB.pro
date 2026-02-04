@@ -808,3 +808,5 @@ macx:contains(QMAKE_HOST.arch, x86_64) {
 DISTFILES += \
     debian/openrgb-udev.postinst \
     debian/openrgb.postinst
+
+include(Controllers/CherryController/nanopb.pri)
