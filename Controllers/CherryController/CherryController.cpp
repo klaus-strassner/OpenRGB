@@ -37,12 +37,13 @@ zmk::studio::Response CherryController::SendRecv(zmk::studio::Request request) {
 
     serialPort.serial_write(reinterpret_cast<char*>(txBuffer.data()), txBuffer.size());
 
-    std::this_thread::sleep_for(std::chrono::milliseconds(50));
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
 
-    uint8_t rxBuffer[512];
+    uint8_t rxBuffer[8192];
     size_t bytesRead = serialPort.serial_read(reinterpret_cast<char*>(rxBuffer), sizeof(rxBuffer));
 
-    // check request id?
+    // todo ?
+    // check request id
     
     zmk::studio::Response response;
     response.ParseFromArray(&rxBuffer[1], bytesRead - 2);
@@ -52,24 +53,62 @@ zmk::studio::Response CherryController::SendRecv(zmk::studio::Request request) {
 
 zmk::core::GetDeviceInfoResponse CherryController::GetDeviceInfo() {
     zmk::studio::Request request;
-    request.mutable_core()->set_get_device_info(true);
+    request.mutable_core()
+        ->set_get_device_info(true);
 
     zmk::studio::Response response = SendRecv(request);
-    return response.request_response().core().get_device_info();
+    return response.request_response()
+        .core()
+        .get_device_info();
 }
 
 zmk::led_settings::LedEffectsNodesInfo CherryController::GetEffects() {
     zmk::studio::Request request;
-    request.mutable_led_settings()->mutable_led_settings_get_info()->set_effects(true);
+    request.mutable_led_settings()
+        ->mutable_led_settings_get_info()
+        ->set_effects(true);
 
     zmk::studio::Response response = SendRecv(request);
-    return response.request_response().led_settings().led_settings_get_info().effects_data();
+    return response.request_response()
+        .led_settings()
+        .led_settings_get_info()
+        .effects_data();
 }
 
-zmk::led_settings::LedSettingsNodeInfo CherryController::GetSettings() {
+zmk::led_settings::LedSettingsNodesInfo CherryController::GetSettings() {
     zmk::studio::Request request;
-    request.mutable_led_settings()->mutable_led_settings_get_info()->set_settings(true);
+    request.mutable_led_settings()
+        ->mutable_led_settings_get_info()
+        ->set_settings(true);
 
     zmk::studio::Response response = SendRecv(request);
-    return response.request_response().led_settings().led_settings_get_info().settings_data();
+    return response.request_response()
+        .led_settings()
+        .led_settings_get_info()
+        .settings_data();
+}
+
+zmk::led_settings::LedSettingsValues CherryController::GetSettingsValues(uint32_t studioId) {
+    zmk::studio::Request request;
+    request.mutable_led_settings()
+        ->mutable_led_settings_get_values()
+        ->set_settings_id(studioId);
+
+    zmk::studio::Response response = SendRecv(request);
+    return response.request_response()
+        .led_settings()
+        .led_settings_get_values()
+        .values();
+}
+
+zmk::behaviors::GetBehaviorDetailsResponse CherryController::GetBehaviorDetail(uint32_t behaviorId) {
+    zmk::studio::Request request;
+    request.mutable_behaviors()
+        ->mutable_get_behavior_details()
+        ->set_behavior_id(behaviorId);
+
+    zmk::studio::Response response = SendRecv(request);
+    return response.request_response()
+        .behaviors()
+        .get_behavior_details();
 }
