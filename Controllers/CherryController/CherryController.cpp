@@ -1,13 +1,9 @@
 #include "CherryController.h"
 #include <thread>
 #include <iostream>
-#include <iomanip>
-
-extern "C" {
-    #include "pb_encode.h"
-    #include "pb_decode.h"
-    #include "studio.pb.h"
-}
+#include <vector>
+#include <string>
+#include "studio.pb.h"
 
 const unsigned char header[] { 0xAB };
 const unsigned char footer[] { 0xAD };
@@ -22,54 +18,58 @@ CherryController::~CherryController() {
     serialPort.serial_set_dtr(true);
 }
 
-zmk_studio_Response CherryController::GetDeviceInfo() {
-    zmk_studio_Request request = zmk_studio_Request_init_zero;
+size_t CherryController::NewId() {
+    return ++requestId;
+}
 
-    uint8_t txBuffer[64];
-    pb_ostream_t txStream = pb_ostream_from_buffer(&txBuffer[1], sizeof(txBuffer) - 2);
-    txBuffer[0] = 0xAB;
-    
+zmk::studio::Response CherryController::SendRecv(zmk::studio::Request request) {
+    std::string payload;
     size_t request_id = NewId();
-    request.request_id = request_id;
-    request.which_subsystem = zmk_studio_Request_core_tag;
-    request.subsystem.core.which_request_type = zmk_core_Request_get_device_info_tag;
+    request.set_request_id(request_id);
 
-    int count;
-    if(pb_encode(&txStream, zmk_studio_Request_fields, &request)) {
-        txBuffer[txStream.bytes_written + 1] = 0xAD;
-        count = serialPort.serial_write(reinterpret_cast<char*>(txBuffer), txStream.bytes_written + 2);
-    }
+    request.SerializeToString(&payload);
 
-    // test output
-    // expect:  AB 08 01 1A 02 08 01 AD
-    // get:     AB 08 01 1A 02 08 00 AD
-    // for (size_t i = 0; i < count; i++) {
-    //     std::cout << std::uppercase << std::hex << std::setw(2) << std::setfill('0')
-    //         << (int)txBuffer[i] << " ";
-    // }
+    std::vector<uint8_t> txBuffer;
+    txBuffer.reserve(payload.size() + 2);
+    txBuffer.push_back(0xAB);
+    txBuffer.insert(txBuffer.end(), payload.begin(), payload.end());
+    txBuffer.push_back(0xAD);
 
-    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    serialPort.serial_write(reinterpret_cast<char*>(txBuffer.data()), txBuffer.size());
 
-    zmk_studio_Response response = zmk_studio_Response_init_zero;
+    std::this_thread::sleep_for(std::chrono::milliseconds(50));
 
-    uint8_t rxBuffer[64];
+    uint8_t rxBuffer[512];
     size_t bytesRead = serialPort.serial_read(reinterpret_cast<char*>(rxBuffer), sizeof(rxBuffer));
-    pb_istream_t rxStream = pb_istream_from_buffer(&rxBuffer[1], bytesRead - 2);
 
-    // test input
-    // expect:  AB 0A 1A 08 01 1A 16 0A 14 0A 00 12 10 57 69 FF FC 5D 7D F4 A9 67 A6 F3 97 C2 23 98 9A AD
-    // get:     AB 0A 1A 08 01 1A 16 0A 14 0A 00 12 10 57 69 FF FC 5D 7D F4 A9 67 A6 F3 97 C2 23 98 9A AD
-    // for (size_t i = 0; i < bytesRead; i++) {
-    //     std::cout << std::uppercase << std::hex << std::setw(2) << std::setfill('0')
-    //         << (int)rxBuffer[i] << " ";
-    // }
-
-    pb_decode(&rxStream, zmk_studio_Response_fields, &response);
+    // check request id?
+    
+    zmk::studio::Response response;
+    response.ParseFromArray(&rxBuffer[1], bytesRead - 2);
 
     return response;
 }
 
+zmk::core::GetDeviceInfoResponse CherryController::GetDeviceInfo() {
+    zmk::studio::Request request;
+    request.mutable_core()->set_get_device_info(true);
 
-size_t CherryController::NewId() {
-    return ++requestId;
+    zmk::studio::Response response = SendRecv(request);
+    return response.request_response().core().get_device_info();
+}
+
+zmk::led_settings::LedEffectsNodesInfo CherryController::GetEffects() {
+    zmk::studio::Request request;
+    request.mutable_led_settings()->mutable_led_settings_get_info()->set_effects(true);
+
+    zmk::studio::Response response = SendRecv(request);
+    return response.request_response().led_settings().led_settings_get_info().effects_data();
+}
+
+zmk::led_settings::LedSettingsNodeInfo CherryController::GetSettings() {
+    zmk::studio::Request request;
+    request.mutable_led_settings()->mutable_led_settings_get_info()->set_settings(true);
+
+    zmk::studio::Response response = SendRecv(request);
+    return response.request_response().led_settings().led_settings_get_info().settings_data();
 }

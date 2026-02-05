@@ -809,4 +809,4 @@ DISTFILES += \
     debian/openrgb-udev.postinst \
     debian/openrgb.postinst
 
-include(Controllers/CherryController/nanopb.pri)
+include(Controllers/CherryController/protoc.pri)
