@@ -7,6 +7,7 @@
 class RGBController_Cherry : public RGBController {
 private:
     CherryController* controller;
+    void SetupModes();
 
 public:
     RGBController_Cherry(CherryController* controller);

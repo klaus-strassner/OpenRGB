@@ -3,11 +3,23 @@
 RGBController_Cherry::RGBController_Cherry(CherryController* controller)
 : controller{controller}
 {
-    name = "Cherry Favonius Keyboard";
+    name = "Cherry Favonius Keyboard";  // change once GetDeviceInfo gives proper name
+                                        // name = controller->GetDeviceInfo().name();
     vendor = "Cherry";
+    description = "Cherry Keyboard Device";
     type = DEVICE_TYPE_KEYBOARD;
-    description = "Cherry Keyboard";
-    
+    location = controller->GetLocation();
+    serial = controller->GetDeviceInfo().serial_number();
+ 
+    SetupModes();
+    SetupZones();
+}
+
+RGBController_Cherry::~RGBController_Cherry() {
+    delete controller;
+}
+
+void RGBController_Cherry::SetupModes() {
     auto effects = controller->GetEffects();
     auto settings = controller->GetSettings();
     auto ledBehavior = controller->GetBehaviorDetail(LED_BEHAVIOR_ID).metadata();
@@ -93,15 +105,19 @@ RGBController_Cherry::RGBController_Cherry(CherryController* controller)
     }
 }
 
-RGBController_Cherry::~RGBController_Cherry() {
-    delete controller;
-}
-
 void RGBController_Cherry::SetupZones() {
 
+    auto physicalLayout = controller->GetPhysicalLayouts().layouts(0);
+
+    zone z;
+    z.name = "Keyboard";
+    z.leds_min = physicalLayout.keys_size();
+    z.leds_max = physicalLayout.keys_size();
+    z.leds_count = physicalLayout.keys_size();
+
 }
 
-void RGBController_Cherry::ResizeZone(int zone, int new_size) {
+void RGBController_Cherry::ResizeZone(int /*zone*/, int /*new_size*/) {
 
 }
 
@@ -109,11 +125,11 @@ void RGBController_Cherry::DeviceUpdateLEDs() {
 
 }
 
-void RGBController_Cherry::UpdateZoneLEDs(int zone) {
+void RGBController_Cherry::UpdateZoneLEDs(int /*zone*/) {
 
 }
 
-void RGBController_Cherry::UpdateSingleLED(int led) {
+void RGBController_Cherry::UpdateSingleLED(int /*led*/) {
 
 }
 
