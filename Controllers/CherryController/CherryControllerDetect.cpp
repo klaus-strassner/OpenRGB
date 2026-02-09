@@ -28,17 +28,11 @@ void DetectCherryController() {
         std::cout << "device detected on " << *ports[device] << ", name: " << response.name() << ", serial number: ";
         for (unsigned char c : response.serial_number()) std::cout << std::hex << std::setw(2) << std::setfill('0') << (int)c;
         std::cout << std::endl;
-    
-        // auto physicalLayout = controller->GetPhysicalLayouts().layouts(0);
-        // std::cout << std::dec << "keys: " << physicalLayout.keys_size() << std::endl;
 
         RGBController_Cherry *rgbController = new RGBController_Cherry(controller);
         ResourceManager::get()->RegisterRGBController(rgbController);
 
         delete ports[device];
-
-        controller->~CherryController();
-        rgbController->~RGBController_Cherry();
     }
 }
 
